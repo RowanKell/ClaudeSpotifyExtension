@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spotify Controller</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Authentication Section -->
+    <div id="auth-section" class="auth-section">
+      <h2>Spotify Controller</h2>
+      <p>Connect to your Spotify account to control playback</p>
+      <button id="login-btn" class="login-btn">Connect to Spotify</button>
+    </div>
+
+    <!-- Player Section -->
+    <div id="player-section" class="player-section hidden">
+      <!-- Album Art -->
+      <div class="album-art-container">
+        <img id="album-art" src="" alt="Album Art" class="album-art">
+        <div id="no-playback" class="no-playback hidden">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <p>No active playback</p>
+        </div>
+      </div>
+
+      <!-- Track Info -->
+      <div class="track-info">
+        <div id="track-name" class="track-name">Not Playing</div>
+        <div id="artist-name" class="artist-name">-</div>
+      </div>
+
+      <!-- Playback Controls -->
+      <div class="controls">
+        <button id="prev-btn" class="control-btn" title="Previous track">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/>
+          </svg>
+        </button>
+
+        <button id="play-pause-btn" class="control-btn play-btn" title="Play/Pause">
+          <svg id="play-icon" width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M8 5v14l11-7z"/>
+          </svg>
+          <svg id="pause-icon" class="hidden" width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+          </svg>
+        </button>
+
+        <button id="next-btn" class="control-btn" title="Next track">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M16 18h2V6h-2zm-11-7l8.5-6v12z"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Logout -->
+      <div class="footer">
+        <button id="logout-btn" class="logout-btn">Disconnect</button>
+      </div>
+    </div>
+
+    <!-- Loading Indicator -->
+    <div id="loading" class="loading hidden">
+      <div class="spinner"></div>
+      <p>Loading...</p>
+    </div>
+
+    <!-- Error Message -->
+    <div id="error-message" class="error-message hidden"></div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

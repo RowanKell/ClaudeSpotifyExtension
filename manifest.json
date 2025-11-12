@@ -1,0 +1,34 @@
+{
+  "manifest_version": 2,
+  "name": "Spotify Controller",
+  "version": "1.0.0",
+  "description": "Control your Spotify playback directly from Firefox",
+  "icons": {
+    "48": "icons/icon.svg",
+    "96": "icons/icon.svg"
+  },
+  "permissions": [
+    "storage",
+    "identity",
+    "https://api.spotify.com/*",
+    "https://accounts.spotify.com/*"
+  ],
+  "browser_action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "48": "icons/icon.svg",
+      "96": "icons/icon.svg"
+    },
+    "default_title": "Spotify Controller"
+  },
+  "background": {
+    "scripts": ["background/background.js"],
+    "persistent": false
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "spotify-controller@example.com",
+      "strict_min_version": "57.0"
+    }
+  }
+}
