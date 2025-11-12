@@ -1,0 +1,1 @@
+This is a firefox extension that allows you to play, pause, and skip music via spotify.
