@@ -491,7 +491,9 @@ async function playPlaylist(playlistUri) {
       // Update playback state after a short delay
       setTimeout(updatePlaybackState, 500);
     } else if (response && response.error) {
-      showError('Failed to play playlist: ' + response.error);
+      // Use the detailed message if available, otherwise use the error code
+      const errorMsg = response.message || response.error;
+      showError(errorMsg);
     }
   } catch (error) {
     console.error('Play playlist error:', error);
@@ -512,7 +514,9 @@ async function playLikedSongs() {
       // Update playback state after a short delay
       setTimeout(updatePlaybackState, 500);
     } else if (response && response.error) {
-      showError('Failed to play liked songs: ' + response.error);
+      // Use the detailed message if available, otherwise use the error code
+      const errorMsg = response.message || response.error;
+      showError(errorMsg);
     }
   } catch (error) {
     console.error('Play liked songs error:', error);
@@ -657,7 +661,9 @@ async function playAlbum(albumUri) {
       // Update playback state after a short delay
       setTimeout(updatePlaybackState, 500);
     } else if (response && response.error) {
-      showError('Failed to play album: ' + response.error);
+      // Use the detailed message if available, otherwise use the error code
+      const errorMsg = response.message || response.error;
+      showError(errorMsg);
     }
   } catch (error) {
     console.error('Play album error:', error);

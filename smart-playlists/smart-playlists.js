@@ -285,18 +285,29 @@ startSessionBtn.addEventListener('click', async () => {
     );
 
     // Start playing the playlist/album
+    let response;
     if (playlistUri === 'liked-songs') {
-      await browser.runtime.sendMessage({ action: 'playLikedSongs' });
+      response = await browser.runtime.sendMessage({ action: 'playLikedSongs' });
     } else if (playlist.type === 'album') {
-      await browser.runtime.sendMessage({
+      response = await browser.runtime.sendMessage({
         action: 'startAlbum',
         albumUri: playlistUri
       });
     } else {
-      await browser.runtime.sendMessage({
+      response = await browser.runtime.sendMessage({
         action: 'startPlaylist',
         playlistUri: playlistUri
       });
+    }
+
+    // Check if playback started successfully
+    if (response && !response.success && response.error) {
+      // Use the detailed message if available, otherwise use the error code
+      const errorMsg = response.message || response.error;
+      showError(errorMsg);
+      // Don't continue with session if playback failed
+      sessionTracker.endSession();
+      return;
     }
 
     // Update UI
@@ -515,16 +526,23 @@ function displayRecommendations(recommendations) {
 // Play a playlist
 async function playPlaylist(playlistUri) {
   try {
+    let response;
     if (playlistUri === 'liked-songs') {
-      await browser.runtime.sendMessage({ action: 'playLikedSongs' });
+      response = await browser.runtime.sendMessage({ action: 'playLikedSongs' });
     } else {
-      await browser.runtime.sendMessage({
+      response = await browser.runtime.sendMessage({
         action: 'startPlaylist',
         playlistUri: playlistUri
       });
     }
 
-    showError('Playing playlist...');
+    if (response && response.success) {
+      showError('Playing playlist...');
+    } else if (response && response.error) {
+      // Use the detailed message if available, otherwise use the error code
+      const errorMsg = response.message || response.error;
+      showError(errorMsg);
+    }
   } catch (error) {
     console.error('Error playing playlist:', error);
     showError('Failed to play playlist. Please try again.');

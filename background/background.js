@@ -222,6 +222,24 @@ async function makeSpotifyRequest(endpoint, options = {}) {
       return { success: false, error: 'AUTH_REQUIRED' };
     }
 
+    // Handle 403 Forbidden (usually means no active device or Premium required)
+    if (response.status === 403) {
+      return {
+        success: false,
+        error: 'NO_ACTIVE_DEVICE',
+        message: 'No active Spotify device found. Please open Spotify on your phone, computer, or web player and start playing any song, then try again.'
+      };
+    }
+
+    // Handle 404 Not Found (resource doesn't exist)
+    if (response.status === 404) {
+      return {
+        success: false,
+        error: 'NOT_FOUND',
+        message: 'The requested resource was not found.'
+      };
+    }
+
     if (!response.ok) {
       throw new Error(`API request failed: ${response.status}`);
     }
@@ -506,12 +524,24 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     // Handle actions with parameters
     if (message.action === 'getUserPlaylists') {
       action(message.limit, message.offset).then(sendResponse);
+    } else if (message.action === 'getSavedTracks') {
+      action(message.limit, message.offset).then(sendResponse);
+    } else if (message.action === 'getSavedAlbums') {
+      action(message.limit, message.offset).then(sendResponse);
     } else if (message.action === 'searchTracks') {
       action(message.query, message.limit).then(sendResponse);
     } else if (message.action === 'addToQueue') {
       action(message.trackUri).then(sendResponse);
+    } else if (message.action === 'getAudioFeatures') {
+      action(message.trackIds).then(sendResponse);
+    } else if (message.action === 'createPlaylist') {
+      action(message.name, message.description, message.isPublic).then(sendResponse);
+    } else if (message.action === 'addTracksToPlaylist') {
+      action(message.playlistId, message.trackUris).then(sendResponse);
     } else if (message.action === 'startPlaylist') {
       action(message.playlistUri).then(sendResponse);
+    } else if (message.action === 'startAlbum') {
+      action(message.albumUri).then(sendResponse);
     } else if (message.action === 'toggleShuffle') {
       action(message.state).then(sendResponse);
     } else {
