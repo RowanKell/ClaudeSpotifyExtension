@@ -1,0 +1,1 @@
+Write readable, future-proof and compact code.
