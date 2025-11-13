@@ -69,32 +69,60 @@ async function init() {
   }
 }
 
-// Load user playlists from Spotify
+// Load user playlists and albums from Spotify
 async function loadPlaylists() {
   try {
-    const response = await browser.runtime.sendMessage({
+    // Load playlists
+    const playlistResponse = await browser.runtime.sendMessage({
       action: 'getUserPlaylists',
       limit: 50,
       offset: 0
     });
 
-    if (response && response.success && response.data && response.data.items) {
-      userPlaylists = response.data.items;
+    // Load albums
+    const albumResponse = await browser.runtime.sendMessage({
+      action: 'getSavedAlbums',
+      limit: 50,
+      offset: 0
+    });
 
-      // Add Liked Songs option
-      userPlaylists.unshift({
-        uri: 'liked-songs',
-        name: 'Liked Songs',
-        images: []
+    userPlaylists = [];
+
+    // Add Liked Songs option
+    userPlaylists.push({
+      uri: 'liked-songs',
+      name: 'Liked Songs',
+      images: [],
+      type: 'collection'
+    });
+
+    // Add playlists
+    if (playlistResponse && playlistResponse.success && playlistResponse.data && playlistResponse.data.items) {
+      playlistResponse.data.items.forEach(playlist => {
+        userPlaylists.push({
+          ...playlist,
+          type: 'playlist'
+        });
       });
-
-      populatePlaylistSelect();
-    } else {
-      throw new Error('Failed to load playlists');
     }
+
+    // Add albums
+    if (albumResponse && albumResponse.success && albumResponse.data && albumResponse.data.items) {
+      albumResponse.data.items.forEach(item => {
+        const album = item.album;
+        userPlaylists.push({
+          uri: album.uri,
+          name: `${album.name} - ${album.artists?.map(a => a.name).join(', ')}`,
+          images: album.images,
+          type: 'album'
+        });
+      });
+    }
+
+    populatePlaylistSelect();
   } catch (error) {
-    console.error('Error loading playlists:', error);
-    showError('Failed to load playlists. Please make sure you\'re logged into Spotify.');
+    console.error('Error loading playlists/albums:', error);
+    showError('Failed to load playlists and albums. Please make sure you\'re logged into Spotify.');
   }
 }
 
@@ -256,9 +284,14 @@ startSessionBtn.addEventListener('click', async () => {
       playlist.images?.[0]?.url || ''
     );
 
-    // Start playing the playlist
+    // Start playing the playlist/album
     if (playlistUri === 'liked-songs') {
       await browser.runtime.sendMessage({ action: 'playLikedSongs' });
+    } else if (playlist.type === 'album') {
+      await browser.runtime.sendMessage({
+        action: 'startAlbum',
+        albumUri: playlistUri
+      });
     } else {
       await browser.runtime.sendMessage({
         action: 'startPlaylist',

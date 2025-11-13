@@ -295,6 +295,14 @@ async function getSavedTracks(limit = 50, offset = 0) {
   return result;
 }
 
+// Get user's saved albums
+async function getSavedAlbums(limit = 50, offset = 0) {
+  console.log('Fetching saved albums with limit:', limit, 'offset:', offset);
+  const result = await makeSpotifyRequest(`/me/albums?limit=${limit}&offset=${offset}`);
+  console.log('Saved albums result:', result);
+  return result;
+}
+
 // Get user's queue
 async function getQueue() {
   return await makeSpotifyRequest('/me/player/queue');
@@ -406,6 +414,16 @@ async function startPlaylist(playlistUri) {
   });
 }
 
+// Start playing an album
+async function startAlbum(albumUri) {
+  return await makeSpotifyRequest('/me/player/play', {
+    method: 'PUT',
+    body: JSON.stringify({
+      context_uri: albumUri
+    })
+  });
+}
+
 // Play liked songs (saved tracks)
 async function playLikedSongs() {
   try {
@@ -467,6 +485,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     previous: previous,
     getUserPlaylists: getUserPlaylists,
     getSavedTracks: getSavedTracks,
+    getSavedAlbums: getSavedAlbums,
     getQueue: getQueue,
     searchTracks: searchTracks,
     addToQueue: addToQueue,
@@ -475,6 +494,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     createPlaylist: createPlaylist,
     addTracksToPlaylist: addTracksToPlaylist,
     startPlaylist: startPlaylist,
+    startAlbum: startAlbum,
     playLikedSongs: playLikedSongs,
     toggleShuffle: toggleShuffle,
     logout: logout
