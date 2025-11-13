@@ -510,15 +510,16 @@ body {
   background: #1DB954;
   border: none;
   border-radius: 50%;
-  padding: 8px;
+  padding: 6px;
   color: #fff;
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 36px;
-  min-height: 36px;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
 }
 
 .search-submit-btn:hover {
