@@ -1,4 +1,4 @@
-// Session Tracker for monitoring active training sessions
+// Session Tracker for monitoring active training sessions with track-level data
 
 class SessionTracker {
   constructor() {
@@ -6,9 +6,11 @@ class SessionTracker {
     this.startTime = null;
     this.pauseTime = null;
     this.totalPausedDuration = 0;
-    this.tracksPlayed = 0;
     this.updateInterval = null;
     this.lastTrackUri = null;
+    this.lastContextUri = null;
+    this.tracksHistory = []; // Complete history of tracks played
+    this.playlistsSwitched = new Set(); // Track playlists switched to
   }
 
   // Start a new training session
@@ -16,13 +18,14 @@ class SessionTracker {
     this.activeSession = {
       id: null, // Will be set when saved
       taskDescription,
-      playlistUri,
-      playlistName,
+      initialPlaylistUri: playlistUri,
+      initialPlaylistName: playlistName,
       playlistImage,
       startTime: Date.now(),
       endTime: null,
       duration: 0,
-      tracksPlayed: 0,
+      tracks: [], // Array of track objects with full details
+      playlistsSwitched: [], // Array of playlist URIs switched to during session
       completed: false,
       rating: null,
       taskKeywords: mlEngine.extractKeywords(taskDescription)
@@ -31,8 +34,10 @@ class SessionTracker {
     this.startTime = Date.now();
     this.pauseTime = null;
     this.totalPausedDuration = 0;
-    this.tracksPlayed = 0;
     this.lastTrackUri = null;
+    this.lastContextUri = playlistUri;
+    this.tracksHistory = [];
+    this.playlistsSwitched = new Set([playlistUri]);
 
     // Start monitoring playback
     this.startMonitoring();
@@ -48,7 +53,7 @@ class SessionTracker {
       return;
     }
 
-    // Update every 3 seconds
+    // Update every 3 seconds to capture track changes
     this.updateInterval = setInterval(async () => {
       await this.checkPlayback();
     }, 3000);
@@ -62,7 +67,7 @@ class SessionTracker {
     }
   }
 
-  // Check current playback state
+  // Check current playback state and capture track data
   async checkPlayback() {
     try {
       const response = await browser.runtime.sendMessage({
@@ -72,18 +77,39 @@ class SessionTracker {
       if (response && response.success && response.data) {
         const data = response.data;
 
-        // Check if currently playing from our session's playlist
-        if (data.context && data.context.uri === this.activeSession.playlistUri) {
-          // Track unique songs played
-          if (data.item && data.item.uri !== this.lastTrackUri) {
-            this.lastTrackUri = data.item.uri;
-            this.tracksPlayed++;
-            this.activeSession.tracksPlayed = this.tracksPlayed;
-          }
-        } else {
-          // User switched to a different playlist
-          console.log('User switched playlist during training session');
-          // Could auto-pause the session here
+        // Check if context (playlist/album) has changed
+        const currentContextUri = data.context?.uri || null;
+        if (currentContextUri && currentContextUri !== this.lastContextUri) {
+          console.log('User switched context:', currentContextUri);
+          this.playlistsSwitched.add(currentContextUri);
+          this.lastContextUri = currentContextUri;
+        }
+
+        // Capture track details
+        if (data.item && data.item.uri !== this.lastTrackUri) {
+          const track = {
+            uri: data.item.uri,
+            id: data.item.id,
+            name: data.item.name,
+            artists: data.item.artists.map(a => ({
+              name: a.name,
+              id: a.id
+            })),
+            album: {
+              name: data.item.album.name,
+              id: data.item.album.id,
+              images: data.item.album.images
+            },
+            durationMs: data.item.duration_ms,
+            playedAt: Date.now(),
+            contextUri: currentContextUri,
+            audioFeatures: null // Will be fetched later in batch
+          };
+
+          this.tracksHistory.push(track);
+          this.lastTrackUri = data.item.uri;
+
+          console.log('Track captured:', track.name, 'by', track.artists.map(a => a.name).join(', '));
         }
       }
     } catch (error) {
@@ -111,7 +137,7 @@ class SessionTracker {
     }
   }
 
-  // End and save the session
+  // End and save the session with audio features
   async endSession(rating = null) {
     this.stopMonitoring();
 
@@ -122,9 +148,14 @@ class SessionTracker {
     // Update session data
     this.activeSession.endTime = endTime;
     this.activeSession.duration = Math.floor(activeDuration / 1000); // Convert to seconds
-    this.activeSession.tracksPlayed = this.tracksPlayed;
+    this.activeSession.tracks = this.tracksHistory;
+    this.activeSession.playlistsSwitched = Array.from(this.playlistsSwitched);
     this.activeSession.completed = true;
     this.activeSession.rating = rating;
+
+    // Fetch audio features for all tracks
+    console.log('Fetching audio features for', this.tracksHistory.length, 'tracks...');
+    await this.fetchAudioFeatures();
 
     // Save to IndexedDB
     try {
@@ -133,7 +164,7 @@ class SessionTracker {
       // Update metadata
       await dataManager.updateSessionCount();
 
-      console.log('Session saved:', savedSession);
+      console.log('Session saved with', this.tracksHistory.length, 'tracks');
 
       // Reset tracker
       this.reset();
@@ -142,6 +173,49 @@ class SessionTracker {
     } catch (error) {
       console.error('Error saving session:', error);
       throw error;
+    }
+  }
+
+  // Fetch audio features for all tracks in batch
+  async fetchAudioFeatures() {
+    if (this.tracksHistory.length === 0) {
+      return;
+    }
+
+    try {
+      // Extract track IDs
+      const trackIds = this.tracksHistory.map(track => track.id);
+
+      // Fetch audio features in batch
+      const response = await browser.runtime.sendMessage({
+        action: 'getAudioFeatures',
+        trackIds: trackIds
+      });
+
+      if (response && response.success && response.data && response.data.audio_features) {
+        const features = response.data.audio_features;
+
+        // Map features back to tracks
+        for (let i = 0; i < this.tracksHistory.length; i++) {
+          if (features[i]) {
+            this.tracksHistory[i].audioFeatures = {
+              energy: features[i].energy,
+              valence: features[i].valence,
+              danceability: features[i].danceability,
+              acousticness: features[i].acousticness,
+              instrumentalness: features[i].instrumentalness,
+              tempo: features[i].tempo,
+              loudness: features[i].loudness,
+              speechiness: features[i].speechiness
+            };
+          }
+        }
+
+        console.log('Audio features fetched for', features.filter(f => f !== null).length, 'tracks');
+      }
+    } catch (error) {
+      console.error('Error fetching audio features:', error);
+      // Continue without audio features - they're optional
     }
   }
 
@@ -158,8 +232,10 @@ class SessionTracker {
     this.startTime = null;
     this.pauseTime = null;
     this.totalPausedDuration = 0;
-    this.tracksPlayed = 0;
     this.lastTrackUri = null;
+    this.lastContextUri = null;
+    this.tracksHistory = [];
+    this.playlistsSwitched = new Set();
   }
 
   // Get current session duration
@@ -206,6 +282,8 @@ class SessionTracker {
     return {
       ...this.activeSession,
       currentDuration: this.getCurrentDuration(),
+      tracksCount: this.tracksHistory.length,
+      playlistsSwitchedCount: this.playlistsSwitched.size,
       isPaused: this.isPaused()
     };
   }

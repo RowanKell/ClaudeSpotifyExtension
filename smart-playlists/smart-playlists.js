@@ -292,9 +292,9 @@ function showActiveSession() {
   activeSessionCard.classList.remove('hidden');
 
   activeTask.textContent = session.taskDescription;
-  activePlaylist.textContent = session.playlistName;
+  activePlaylist.textContent = session.initialPlaylistName;
   sessionDuration.textContent = sessionTracker.formatDuration(session.currentDuration);
-  tracksPlayed.textContent = session.tracksPlayed;
+  tracksPlayed.textContent = session.tracksCount || 0;
 
   // Update pause button text
   pauseSessionBtn.textContent = session.isPaused ? 'Resume Session' : 'Pause Session';
@@ -315,7 +315,7 @@ function startDurationUpdate() {
     const session = sessionTracker.getActiveSession();
     if (session) {
       sessionDuration.textContent = sessionTracker.formatDuration(session.currentDuration);
-      tracksPlayed.textContent = session.tracksPlayed;
+      tracksPlayed.textContent = session.tracksCount || 0;
     }
   }, 1000);
 }

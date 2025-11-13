@@ -14,6 +14,8 @@ const SCOPES = [
   'user-read-currently-playing',
   'playlist-read-private',
   'playlist-read-collaborative',
+  'playlist-modify-public',
+  'playlist-modify-private',
   'user-library-read'
 ].join(' ');
 
@@ -310,6 +312,90 @@ async function addToQueue(trackUri) {
   return await makeSpotifyRequest(`/me/player/queue?uri=${encodedUri}`, { method: 'POST' });
 }
 
+// Get audio features for tracks (up to 100 tracks)
+async function getAudioFeatures(trackIds) {
+  if (!Array.isArray(trackIds) || trackIds.length === 0) {
+    return { success: false, error: 'No track IDs provided' };
+  }
+
+  // Spotify API accepts up to 100 track IDs
+  const chunks = [];
+  for (let i = 0; i < trackIds.length; i += 100) {
+    chunks.push(trackIds.slice(i, i + 100));
+  }
+
+  const allFeatures = [];
+  for (const chunk of chunks) {
+    const ids = chunk.join(',');
+    const result = await makeSpotifyRequest(`/audio-features?ids=${ids}`);
+
+    if (result.success && result.data && result.data.audio_features) {
+      allFeatures.push(...result.data.audio_features);
+    }
+  }
+
+  return { success: true, data: { audio_features: allFeatures } };
+}
+
+// Get current user's profile (needed for creating playlists)
+async function getCurrentUser() {
+  return await makeSpotifyRequest('/me');
+}
+
+// Create a new playlist
+async function createPlaylist(name, description = '', isPublic = false) {
+  try {
+    // Get current user ID
+    const userResult = await getCurrentUser();
+    if (!userResult.success || !userResult.data) {
+      return { success: false, error: 'Failed to get user profile' };
+    }
+
+    const userId = userResult.data.id;
+
+    // Create playlist
+    return await makeSpotifyRequest(`/users/${userId}/playlists`, {
+      method: 'POST',
+      body: JSON.stringify({
+        name: name,
+        description: description,
+        public: isPublic
+      })
+    });
+  } catch (error) {
+    console.error('Error creating playlist:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// Add tracks to a playlist
+async function addTracksToPlaylist(playlistId, trackUris) {
+  if (!Array.isArray(trackUris) || trackUris.length === 0) {
+    return { success: false, error: 'No track URIs provided' };
+  }
+
+  // Spotify API accepts up to 100 tracks per request
+  const chunks = [];
+  for (let i = 0; i < trackUris.length; i += 100) {
+    chunks.push(trackUris.slice(i, i + 100));
+  }
+
+  for (const chunk of chunks) {
+    const result = await makeSpotifyRequest(`/playlists/${playlistId}/tracks`, {
+      method: 'POST',
+      body: JSON.stringify({
+        uris: chunk
+      })
+    });
+
+    if (!result.success) {
+      return result;
+    }
+  }
+
+  return { success: true };
+}
+
 // Start playing a playlist
 async function startPlaylist(playlistUri) {
   return await makeSpotifyRequest('/me/player/play', {
@@ -384,6 +470,10 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     getQueue: getQueue,
     searchTracks: searchTracks,
     addToQueue: addToQueue,
+    getAudioFeatures: getAudioFeatures,
+    getCurrentUser: getCurrentUser,
+    createPlaylist: createPlaylist,
+    addTracksToPlaylist: addTracksToPlaylist,
     startPlaylist: startPlaylist,
     playLikedSongs: playLikedSongs,
     toggleShuffle: toggleShuffle,
