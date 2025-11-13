@@ -92,6 +92,10 @@ function hideLoading() {
 }
 
 function showError(message) {
+  if (!message || message.trim() === '') {
+    errorMessage.classList.add('hidden');
+    return;
+  }
   errorMessage.textContent = message;
   errorMessage.classList.remove('hidden');
   setTimeout(() => {
@@ -444,8 +448,6 @@ async function playPlaylist(playlistUri) {
 
       // Update playback state after a short delay
       setTimeout(updatePlaybackState, 500);
-
-      showError(''); // Clear any previous errors
     } else if (response && response.error) {
       showError('Failed to play playlist: ' + response.error);
     }
