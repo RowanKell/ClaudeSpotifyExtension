@@ -220,15 +220,18 @@ prevBtn.addEventListener('click', async () => {
   try {
     const response = await browser.runtime.sendMessage({ action: 'previous' });
 
-    if (response.success) {
+    if (response && response.success) {
       // Update state after a short delay
       setTimeout(updatePlaybackState, 500);
-    } else {
-      showError('Failed to skip to previous track');
+    } else if (response && response.error) {
+      showError('Failed to skip to previous track: ' + response.error);
+    } else if (!response) {
+      console.error('No response from background script');
+      showError('Previous track failed - no response');
     }
   } catch (error) {
     console.error('Previous error:', error);
-    showError('Previous track failed');
+    showError('Previous track failed: ' + error.message);
   }
 });
 
@@ -236,15 +239,18 @@ nextBtn.addEventListener('click', async () => {
   try {
     const response = await browser.runtime.sendMessage({ action: 'next' });
 
-    if (response.success) {
+    if (response && response.success) {
       // Update state after a short delay
       setTimeout(updatePlaybackState, 500);
-    } else {
-      showError('Failed to skip to next track');
+    } else if (response && response.error) {
+      showError('Failed to skip to next track: ' + response.error);
+    } else if (!response) {
+      console.error('No response from background script');
+      showError('Next track failed - no response');
     }
   } catch (error) {
     console.error('Next error:', error);
-    showError('Next track failed');
+    showError('Next track failed: ' + error.message);
   }
 });
 

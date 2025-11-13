@@ -221,8 +221,28 @@ async function makeSpotifyRequest(endpoint, options = {}) {
       throw new Error(`API request failed: ${response.status}`);
     }
 
-    const data = await response.json();
-    return { success: true, data };
+    // Check if response has content before parsing JSON
+    const contentType = response.headers.get('content-type');
+    const contentLength = response.headers.get('content-length');
+
+    // Handle empty responses or non-JSON content
+    if (!contentType || !contentType.includes('application/json') || contentLength === '0') {
+      return { success: true, data: null };
+    }
+
+    // Try to parse JSON, handle empty bodies gracefully
+    try {
+      const text = await response.text();
+      if (!text || text.trim() === '') {
+        return { success: true, data: null };
+      }
+      const data = JSON.parse(text);
+      return { success: true, data };
+    } catch (parseError) {
+      // If JSON parsing fails but request was successful, return success with no data
+      console.warn('Failed to parse response JSON:', parseError);
+      return { success: true, data: null };
+    }
   } catch (error) {
     console.error('Spotify API error:', error);
     return { success: false, error: error.message };
