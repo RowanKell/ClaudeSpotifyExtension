@@ -509,13 +509,16 @@ body {
 .search-submit-btn {
   background: #1DB954;
   border: none;
-  border-radius: 20px;
-  padding: 8px 20px;
+  border-radius: 50%;
+  padding: 8px;
   color: #fff;
-  font-size: 14px;
-  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  min-height: 36px;
 }
 
 .search-submit-btn:hover {
