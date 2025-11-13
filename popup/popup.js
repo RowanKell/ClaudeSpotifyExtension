@@ -408,14 +408,14 @@ function displayPlaylists(playlists) {
   }
 
   playlistList.innerHTML = playlists.map(playlist => {
-    const imageUrl = playlist.images[0]?.url || '';
+    const imageUrl = playlist.images?.[0]?.url || '';
     const trackCount = playlist.tracks?.total || 0;
 
     return `
-      <div class="playlist-item" data-uri="${playlist.uri}">
-        ${imageUrl ? `<img src="${imageUrl}" alt="${playlist.name}" class="playlist-image">` : '<div class="playlist-image"></div>'}
+      <div class="playlist-item" data-uri="${playlist.uri || ''}">
+        ${imageUrl ? `<img src="${imageUrl}" alt="${playlist.name || 'Playlist'}" class="playlist-image">` : '<div class="playlist-image"></div>'}
         <div class="playlist-info">
-          <div class="playlist-name">${playlist.name}</div>
+          <div class="playlist-name">${playlist.name || 'Unnamed Playlist'}</div>
           <div class="playlist-tracks">${trackCount} track${trackCount !== 1 ? 's' : ''}</div>
         </div>
       </div>
