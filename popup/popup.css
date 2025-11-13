@@ -384,6 +384,13 @@ body {
   background: rgba(255, 255, 255, 0.1);
 }
 
+.liked-songs-image {
+  background: linear-gradient(135deg, #450af5, #c4efd9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .playlist-info {
   flex: 1;
   min-width: 0;

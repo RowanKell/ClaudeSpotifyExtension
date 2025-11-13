@@ -423,7 +423,23 @@ function displayPlaylists(playlists) {
     return;
   }
 
-  playlistList.innerHTML = playlists.map(playlist => {
+  // Create Liked Songs entry
+  const likedSongsHtml = `
+    <div class="playlist-item liked-songs-item" data-type="liked-songs">
+      <div class="playlist-image liked-songs-image">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="#fff">
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+        </svg>
+      </div>
+      <div class="playlist-info">
+        <div class="playlist-name">Liked Songs</div>
+        <div class="playlist-tracks">Your saved tracks</div>
+      </div>
+    </div>
+  `;
+
+  // Create regular playlists
+  const playlistsHtml = playlists.map(playlist => {
     const imageUrl = playlist.images?.[0]?.url || '';
     const trackCount = playlist.tracks?.total || 0;
 
@@ -438,11 +454,18 @@ function displayPlaylists(playlists) {
     `;
   }).join('');
 
+  playlistList.innerHTML = likedSongsHtml + playlistsHtml;
+
   // Add click handlers to playlist items
   document.querySelectorAll('.playlist-item').forEach(item => {
     item.addEventListener('click', async () => {
-      const playlistUri = item.getAttribute('data-uri');
-      await playPlaylist(playlistUri);
+      const type = item.getAttribute('data-type');
+      if (type === 'liked-songs') {
+        await playLikedSongs();
+      } else {
+        const playlistUri = item.getAttribute('data-uri');
+        await playPlaylist(playlistUri);
+      }
     });
   });
 }
@@ -466,6 +489,27 @@ async function playPlaylist(playlistUri) {
   } catch (error) {
     console.error('Play playlist error:', error);
     showError('Failed to play playlist: ' + error.message);
+  }
+}
+
+async function playLikedSongs() {
+  try {
+    const response = await browser.runtime.sendMessage({
+      action: 'playLikedSongs'
+    });
+
+    if (response && response.success) {
+      // Close the modal
+      playlistModal.classList.add('hidden');
+
+      // Update playback state after a short delay
+      setTimeout(updatePlaybackState, 500);
+    } else if (response && response.error) {
+      showError('Failed to play liked songs: ' + response.error);
+    }
+  } catch (error) {
+    console.error('Play liked songs error:', error);
+    showError('Failed to play liked songs: ' + error.message);
   }
 }
 
