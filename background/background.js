@@ -284,6 +284,11 @@ async function getUserPlaylists(limit = 50, offset = 0) {
   return result;
 }
 
+// Get user's queue
+async function getQueue() {
+  return await makeSpotifyRequest('/me/player/queue');
+}
+
 // Start playing a playlist
 async function startPlaylist(playlistUri) {
   return await makeSpotifyRequest('/me/player/play', {
@@ -322,6 +327,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     next: next,
     previous: previous,
     getUserPlaylists: getUserPlaylists,
+    getQueue: getQueue,
     startPlaylist: startPlaylist,
     toggleShuffle: toggleShuffle,
     logout: logout

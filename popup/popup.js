@@ -24,6 +24,11 @@ const playlistModal = document.getElementById('playlist-modal');
 const closeModalBtn = document.getElementById('close-modal-btn');
 const playlistList = document.getElementById('playlist-list');
 
+const queueBtn = document.getElementById('queue-btn');
+const queueModal = document.getElementById('queue-modal');
+const closeQueueModalBtn = document.getElementById('close-queue-modal-btn');
+const queueList = document.getElementById('queue-list');
+
 // State
 let isPlaying = false;
 let isShuffle = false;
@@ -455,6 +460,140 @@ async function playPlaylist(playlistUri) {
     console.error('Play playlist error:', error);
     showError('Failed to play playlist: ' + error.message);
   }
+}
+
+// Queue functionality
+queueBtn.addEventListener('click', async () => {
+  try {
+    queueModal.classList.remove('hidden');
+    await loadQueue();
+  } catch (error) {
+    console.error('Queue load error:', error);
+    showError('Failed to load queue');
+  }
+});
+
+closeQueueModalBtn.addEventListener('click', () => {
+  queueModal.classList.add('hidden');
+});
+
+// Close queue modal when clicking outside
+queueModal.addEventListener('click', (e) => {
+  if (e.target === queueModal) {
+    queueModal.classList.add('hidden');
+  }
+});
+
+async function loadQueue() {
+  try {
+    // Show loading state
+    queueList.innerHTML = `
+      <div class="playlist-loading">
+        <div class="spinner"></div>
+        <p>Loading queue...</p>
+      </div>
+    `;
+
+    const response = await browser.runtime.sendMessage({
+      action: 'getQueue'
+    });
+
+    console.log('Queue response:', response);
+
+    if (!response) {
+      queueList.innerHTML = `
+        <div class="playlist-loading">
+          <p style="color: #ff6b6b;">No response from background script</p>
+        </div>
+      `;
+      return;
+    }
+
+    if (response.error === 'AUTH_REQUIRED') {
+      queueList.innerHTML = `
+        <div class="playlist-loading">
+          <p style="color: #ff6b6b;">Please reconnect to Spotify</p>
+        </div>
+      `;
+      return;
+    }
+
+    if (!response.success) {
+      queueList.innerHTML = `
+        <div class="playlist-loading">
+          <p style="color: #ff6b6b;">Failed to load queue: ${response.error || 'Unknown error'}</p>
+        </div>
+      `;
+      return;
+    }
+
+    if (!response.data) {
+      queueList.innerHTML = `
+        <div class="playlist-loading">
+          <p style="color: #ff6b6b;">No queue data received</p>
+        </div>
+      `;
+      return;
+    }
+
+    displayQueue(response.data);
+  } catch (error) {
+    console.error('Load queue error:', error);
+    queueList.innerHTML = `
+      <div class="playlist-loading">
+        <p style="color: #ff6b6b;">Error: ${error.message || 'Unknown error'}</p>
+      </div>
+    `;
+  }
+}
+
+function displayQueue(queueData) {
+  const currentlyPlaying = queueData.currently_playing;
+  const queue = queueData.queue || [];
+
+  if (!currentlyPlaying && queue.length === 0) {
+    queueList.innerHTML = `
+      <div class="playlist-loading">
+        <p>Queue is empty</p>
+      </div>
+    `;
+    return;
+  }
+
+  let html = '';
+
+  // Show currently playing
+  if (currentlyPlaying) {
+    html += '<div class="queue-section-header">Now Playing</div>';
+    html += createQueueItem(currentlyPlaying, true);
+  }
+
+  // Show upcoming tracks
+  if (queue.length > 0) {
+    html += '<div class="queue-section-header">Up Next</div>';
+    queue.forEach(track => {
+      html += createQueueItem(track, false);
+    });
+  }
+
+  queueList.innerHTML = html;
+}
+
+function createQueueItem(track, isCurrentlyPlaying) {
+  const imageUrl = track.album?.images?.[0]?.url || '';
+  const trackName = track.name || 'Unknown Track';
+  const artistName = track.artists?.map(a => a.name).join(', ') || 'Unknown Artist';
+  const currentClass = isCurrentlyPlaying ? 'currently-playing' : '';
+
+  return `
+    <div class="queue-item ${currentClass}">
+      ${imageUrl ? `<img src="${imageUrl}" alt="${trackName}" class="queue-image">` : '<div class="queue-image"></div>'}
+      <div class="queue-info">
+        <div class="queue-name">${trackName}</div>
+        <div class="queue-artist">${artistName}</div>
+      </div>
+    </div>
+  `;
 }
 
 // Initialize
