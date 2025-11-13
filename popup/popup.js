@@ -202,17 +202,23 @@ playPauseBtn.addEventListener('click', async () => {
     const action = isPlaying ? 'pause' : 'play';
     const response = await browser.runtime.sendMessage({ action });
 
-    if (response.success) {
+    if (response && response.success) {
       isPlaying = !isPlaying;
       updatePlayPauseButton();
       // Update state after a short delay
       setTimeout(updatePlaybackState, 500);
+    } else if (response && response.error === 'NO_DEVICES') {
+      showError(response.message || 'No active Spotify devices found. Please open Spotify on a device first.');
+    } else if (response && response.error === 'NO_AVAILABLE_DEVICES') {
+      showError(response.message || 'All devices are restricted. Please check your Spotify settings.');
+    } else if (response && response.error) {
+      showError('Failed to ' + action + ' playback: ' + response.error);
     } else {
       showError('Failed to ' + action + ' playback');
     }
   } catch (error) {
     console.error('Play/Pause error:', error);
-    showError('Playback control failed');
+    showError('Playback control failed: ' + error.message);
   }
 });
 

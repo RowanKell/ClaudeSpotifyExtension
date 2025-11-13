@@ -6,6 +6,7 @@ A beautiful Firefox extension that allows you to control your Spotify playback d
 
 - **Spotify Integration** - Full integration with Spotify Web API
 - **Playback Controls** - Play, pause, skip forward, and skip backward
+- **Resume Playback** - Start playing music even when nothing is currently playing (requires Spotify open on a device)
 - **Album Artwork** - Display current track's album cover
 - **Track Information** - Show track name and artist
 - **Real-time Updates** - Automatically updates playback state
@@ -89,6 +90,8 @@ Once authenticated:
 - **Album Art** - Displays the current track's album cover
 - **Track Info** - Shows track name and artist
 - **Play/Pause** - Click the center button to toggle playback
+  - **Resume Feature**: If nothing is playing, the extension will automatically find an available Spotify device and resume your last played track
+  - Note: Spotify must be open on at least one device (computer, phone, tablet, etc.)
 - **Previous** - Click the left button to go to previous track
 - **Next** - Click the right button to skip to next track
 
@@ -159,6 +162,15 @@ Make sure you've replaced `YOUR_CLIENT_ID_HERE` in `background/background.js` wi
 1. Make sure you have Spotify Premium (required for API access)
 2. Ensure Spotify is actively playing on one of your devices
 3. Check that you've granted all required permissions
+
+### "No active Spotify devices found" Error
+
+If you see this error when trying to play music:
+
+1. Open Spotify on at least one device (computer, phone, tablet, smart speaker, etc.)
+2. The device doesn't need to be playing anything, just have Spotify open and logged in
+3. Try clicking play again - the extension will automatically find and use an available device
+4. If the error persists, try playing something directly in Spotify first, then use the extension
 
 ### Extension Not Working After Firefox Restart
 

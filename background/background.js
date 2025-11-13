@@ -254,9 +254,58 @@ async function getCurrentPlayback() {
   return await makeSpotifyRequest('/me/player');
 }
 
+// Get available devices
+async function getAvailableDevices() {
+  return await makeSpotifyRequest('/me/player/devices');
+}
+
 // Play
 async function play() {
-  return await makeSpotifyRequest('/me/player/play', { method: 'PUT' });
+  // First, try to resume playback normally
+  const result = await makeSpotifyRequest('/me/player/play', { method: 'PUT' });
+
+  // If it failed, try to find an available device and start playback
+  if (!result.success) {
+    console.log('Direct play failed, checking for available devices...');
+
+    // Get available devices
+    const devicesResult = await getAvailableDevices();
+
+    if (devicesResult.success && devicesResult.data && devicesResult.data.devices) {
+      const devices = devicesResult.data.devices;
+
+      if (devices.length === 0) {
+        return {
+          success: false,
+          error: 'NO_DEVICES',
+          message: 'No active Spotify devices found. Please open Spotify on a device first.'
+        };
+      }
+
+      // Find the first non-restricted device, preferring the last active one
+      const activeDevice = devices.find(d => d.is_active && !d.is_restricted);
+      const availableDevice = activeDevice || devices.find(d => !d.is_restricted);
+
+      if (!availableDevice) {
+        return {
+          success: false,
+          error: 'NO_AVAILABLE_DEVICES',
+          message: 'All devices are restricted. Please check your Spotify settings.'
+        };
+      }
+
+      // Try to start playback on the selected device
+      console.log(`Starting playback on device: ${availableDevice.name}`);
+      return await makeSpotifyRequest(
+        `/me/player/play?device_id=${availableDevice.id}`,
+        { method: 'PUT' }
+      );
+    }
+
+    return result; // Return original error if we couldn't get devices
+  }
+
+  return result;
 }
 
 // Pause
@@ -292,6 +341,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     authenticate: authenticate,
     refreshToken: refreshToken,
     getCurrentPlayback: getCurrentPlayback,
+    getAvailableDevices: getAvailableDevices,
     play: play,
     pause: pause,
     next: next,
