@@ -348,20 +348,50 @@ async function loadPlaylists() {
       offset: 0
     });
 
-    if (response && response.success && response.data) {
-      displayPlaylists(response.data.items);
-    } else if (response && response.error) {
+    console.log('Playlists response:', response);
+
+    if (!response) {
       playlistList.innerHTML = `
         <div class="playlist-loading">
-          <p style="color: #ff6b6b;">Failed to load playlists: ${response.error}</p>
+          <p style="color: #ff6b6b;">No response from background script</p>
         </div>
       `;
+      return;
     }
+
+    if (response.error === 'AUTH_REQUIRED') {
+      playlistList.innerHTML = `
+        <div class="playlist-loading">
+          <p style="color: #ff6b6b;">Please disconnect and reconnect to grant playlist permissions</p>
+        </div>
+      `;
+      return;
+    }
+
+    if (!response.success) {
+      playlistList.innerHTML = `
+        <div class="playlist-loading">
+          <p style="color: #ff6b6b;">Failed to load playlists: ${response.error || 'Unknown error'}</p>
+        </div>
+      `;
+      return;
+    }
+
+    if (!response.data) {
+      playlistList.innerHTML = `
+        <div class="playlist-loading">
+          <p style="color: #ff6b6b;">No playlist data received</p>
+        </div>
+      `;
+      return;
+    }
+
+    displayPlaylists(response.data.items);
   } catch (error) {
     console.error('Load playlists error:', error);
     playlistList.innerHTML = `
       <div class="playlist-loading">
-        <p style="color: #ff6b6b;">Error loading playlists</p>
+        <p style="color: #ff6b6b;">Error: ${error.message || 'Unknown error'}</p>
       </div>
     `;
   }

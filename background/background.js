@@ -278,7 +278,10 @@ async function previous() {
 
 // Get user's playlists
 async function getUserPlaylists(limit = 50, offset = 0) {
-  return await makeSpotifyRequest(`/me/playlists?limit=${limit}&offset=${offset}`);
+  console.log('Fetching playlists with limit:', limit, 'offset:', offset);
+  const result = await makeSpotifyRequest(`/me/playlists?limit=${limit}&offset=${offset}`);
+  console.log('Playlists result:', result);
+  return result;
 }
 
 // Start playing a playlist
