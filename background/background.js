@@ -13,7 +13,8 @@ const SCOPES = [
   'user-modify-playback-state',
   'user-read-currently-playing',
   'playlist-read-private',
-  'playlist-read-collaborative'
+  'playlist-read-collaborative',
+  'user-library-read'
 ].join(' ');
 
 // Generate random string for PKCE
@@ -284,6 +285,31 @@ async function getUserPlaylists(limit = 50, offset = 0) {
   return result;
 }
 
+// Get user's saved tracks (liked songs)
+async function getSavedTracks(limit = 50, offset = 0) {
+  console.log('Fetching saved tracks with limit:', limit, 'offset:', offset);
+  const result = await makeSpotifyRequest(`/me/tracks?limit=${limit}&offset=${offset}`);
+  console.log('Saved tracks result:', result);
+  return result;
+}
+
+// Get user's queue
+async function getQueue() {
+  return await makeSpotifyRequest('/me/player/queue');
+}
+
+// Search for tracks
+async function searchTracks(query, limit = 20) {
+  const encodedQuery = encodeURIComponent(query);
+  return await makeSpotifyRequest(`/search?q=${encodedQuery}&type=track&limit=${limit}`);
+}
+
+// Add track to queue
+async function addToQueue(trackUri) {
+  const encodedUri = encodeURIComponent(trackUri);
+  return await makeSpotifyRequest(`/me/player/queue?uri=${encodedUri}`, { method: 'POST' });
+}
+
 // Start playing a playlist
 async function startPlaylist(playlistUri) {
   return await makeSpotifyRequest('/me/player/play', {
@@ -292,6 +318,38 @@ async function startPlaylist(playlistUri) {
       context_uri: playlistUri
     })
   });
+}
+
+// Play liked songs (saved tracks)
+async function playLikedSongs() {
+  try {
+    // Fetch the first 50 saved tracks
+    const tracksResult = await getSavedTracks(50, 0);
+
+    if (!tracksResult.success || !tracksResult.data || !tracksResult.data.items) {
+      return { success: false, error: 'Failed to fetch saved tracks' };
+    }
+
+    // Extract track URIs
+    const trackUris = tracksResult.data.items
+      .filter(item => item.track && item.track.uri)
+      .map(item => item.track.uri);
+
+    if (trackUris.length === 0) {
+      return { success: false, error: 'No saved tracks found' };
+    }
+
+    // Start playback with the track URIs
+    return await makeSpotifyRequest('/me/player/play', {
+      method: 'PUT',
+      body: JSON.stringify({
+        uris: trackUris
+      })
+    });
+  } catch (error) {
+    console.error('Error playing liked songs:', error);
+    return { success: false, error: error.message };
+  }
 }
 
 // Toggle shuffle mode
@@ -322,7 +380,12 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     next: next,
     previous: previous,
     getUserPlaylists: getUserPlaylists,
+    getSavedTracks: getSavedTracks,
+    getQueue: getQueue,
+    searchTracks: searchTracks,
+    addToQueue: addToQueue,
     startPlaylist: startPlaylist,
+    playLikedSongs: playLikedSongs,
     toggleShuffle: toggleShuffle,
     logout: logout
   };
@@ -333,6 +396,10 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     // Handle actions with parameters
     if (message.action === 'getUserPlaylists') {
       action(message.limit, message.offset).then(sendResponse);
+    } else if (message.action === 'searchTracks') {
+      action(message.query, message.limit).then(sendResponse);
+    } else if (message.action === 'addToQueue') {
+      action(message.trackUri).then(sendResponse);
     } else if (message.action === 'startPlaylist') {
       action(message.playlistUri).then(sendResponse);
     } else if (message.action === 'toggleShuffle') {

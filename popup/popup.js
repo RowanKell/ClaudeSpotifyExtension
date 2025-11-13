@@ -24,6 +24,18 @@ const playlistModal = document.getElementById('playlist-modal');
 const closeModalBtn = document.getElementById('close-modal-btn');
 const playlistList = document.getElementById('playlist-list');
 
+const queueBtn = document.getElementById('queue-btn');
+const queueModal = document.getElementById('queue-modal');
+const closeQueueModalBtn = document.getElementById('close-queue-modal-btn');
+const queueList = document.getElementById('queue-list');
+
+const searchBtn = document.getElementById('search-btn');
+const searchModal = document.getElementById('search-modal');
+const closeSearchModalBtn = document.getElementById('close-search-modal-btn');
+const searchInput = document.getElementById('search-input');
+const searchSubmitBtn = document.getElementById('search-submit-btn');
+const searchResults = document.getElementById('search-results');
+
 // State
 let isPlaying = false;
 let isShuffle = false;
@@ -411,7 +423,23 @@ function displayPlaylists(playlists) {
     return;
   }
 
-  playlistList.innerHTML = playlists.map(playlist => {
+  // Create Liked Songs entry
+  const likedSongsHtml = `
+    <div class="playlist-item liked-songs-item" data-type="liked-songs">
+      <div class="playlist-image liked-songs-image">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="#fff">
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+        </svg>
+      </div>
+      <div class="playlist-info">
+        <div class="playlist-name">Liked Songs</div>
+        <div class="playlist-tracks">Your saved tracks</div>
+      </div>
+    </div>
+  `;
+
+  // Create regular playlists
+  const playlistsHtml = playlists.map(playlist => {
     const imageUrl = playlist.images?.[0]?.url || '';
     const trackCount = playlist.tracks?.total || 0;
 
@@ -426,11 +454,18 @@ function displayPlaylists(playlists) {
     `;
   }).join('');
 
+  playlistList.innerHTML = likedSongsHtml + playlistsHtml;
+
   // Add click handlers to playlist items
   document.querySelectorAll('.playlist-item').forEach(item => {
     item.addEventListener('click', async () => {
-      const playlistUri = item.getAttribute('data-uri');
-      await playPlaylist(playlistUri);
+      const type = item.getAttribute('data-type');
+      if (type === 'liked-songs') {
+        await playLikedSongs();
+      } else {
+        const playlistUri = item.getAttribute('data-uri');
+        await playPlaylist(playlistUri);
+      }
     });
   });
 }
@@ -454,6 +489,322 @@ async function playPlaylist(playlistUri) {
   } catch (error) {
     console.error('Play playlist error:', error);
     showError('Failed to play playlist: ' + error.message);
+  }
+}
+
+async function playLikedSongs() {
+  try {
+    const response = await browser.runtime.sendMessage({
+      action: 'playLikedSongs'
+    });
+
+    if (response && response.success) {
+      // Close the modal
+      playlistModal.classList.add('hidden');
+
+      // Update playback state after a short delay
+      setTimeout(updatePlaybackState, 500);
+    } else if (response && response.error) {
+      showError('Failed to play liked songs: ' + response.error);
+    }
+  } catch (error) {
+    console.error('Play liked songs error:', error);
+    showError('Failed to play liked songs: ' + error.message);
+  }
+}
+
+// Queue functionality
+queueBtn.addEventListener('click', async () => {
+  try {
+    queueModal.classList.remove('hidden');
+    await loadQueue();
+  } catch (error) {
+    console.error('Queue load error:', error);
+    showError('Failed to load queue');
+  }
+});
+
+closeQueueModalBtn.addEventListener('click', () => {
+  queueModal.classList.add('hidden');
+});
+
+// Close queue modal when clicking outside
+queueModal.addEventListener('click', (e) => {
+  if (e.target === queueModal) {
+    queueModal.classList.add('hidden');
+  }
+});
+
+async function loadQueue() {
+  try {
+    // Show loading state
+    queueList.innerHTML = `
+      <div class="playlist-loading">
+        <div class="spinner"></div>
+        <p>Loading queue...</p>
+      </div>
+    `;
+
+    const response = await browser.runtime.sendMessage({
+      action: 'getQueue'
+    });
+
+    console.log('Queue response:', response);
+
+    if (!response) {
+      queueList.innerHTML = `
+        <div class="playlist-loading">
+          <p style="color: #ff6b6b;">No response from background script</p>
+        </div>
+      `;
+      return;
+    }
+
+    if (response.error === 'AUTH_REQUIRED') {
+      queueList.innerHTML = `
+        <div class="playlist-loading">
+          <p style="color: #ff6b6b;">Please reconnect to Spotify</p>
+        </div>
+      `;
+      return;
+    }
+
+    if (!response.success) {
+      queueList.innerHTML = `
+        <div class="playlist-loading">
+          <p style="color: #ff6b6b;">Failed to load queue: ${response.error || 'Unknown error'}</p>
+        </div>
+      `;
+      return;
+    }
+
+    if (!response.data) {
+      queueList.innerHTML = `
+        <div class="playlist-loading">
+          <p style="color: #ff6b6b;">No queue data received</p>
+        </div>
+      `;
+      return;
+    }
+
+    displayQueue(response.data);
+  } catch (error) {
+    console.error('Load queue error:', error);
+    queueList.innerHTML = `
+      <div class="playlist-loading">
+        <p style="color: #ff6b6b;">Error: ${error.message || 'Unknown error'}</p>
+      </div>
+    `;
+  }
+}
+
+function displayQueue(queueData) {
+  const currentlyPlaying = queueData.currently_playing;
+  const queue = queueData.queue || [];
+
+  if (!currentlyPlaying && queue.length === 0) {
+    queueList.innerHTML = `
+      <div class="playlist-loading">
+        <p>Queue is empty</p>
+      </div>
+    `;
+    return;
+  }
+
+  let html = '';
+
+  // Show currently playing
+  if (currentlyPlaying) {
+    html += '<div class="queue-section-header">Now Playing</div>';
+    html += createQueueItem(currentlyPlaying, true);
+  }
+
+  // Show upcoming tracks
+  if (queue.length > 0) {
+    html += '<div class="queue-section-header">Up Next</div>';
+    queue.forEach(track => {
+      html += createQueueItem(track, false);
+    });
+  }
+
+  queueList.innerHTML = html;
+}
+
+function createQueueItem(track, isCurrentlyPlaying) {
+  const imageUrl = track.album?.images?.[0]?.url || '';
+  const trackName = track.name || 'Unknown Track';
+  const artistName = track.artists?.map(a => a.name).join(', ') || 'Unknown Artist';
+  const currentClass = isCurrentlyPlaying ? 'currently-playing' : '';
+
+  return `
+    <div class="queue-item ${currentClass}">
+      ${imageUrl ? `<img src="${imageUrl}" alt="${trackName}" class="queue-image">` : '<div class="queue-image"></div>'}
+      <div class="queue-info">
+        <div class="queue-name">${trackName}</div>
+        <div class="queue-artist">${artistName}</div>
+      </div>
+    </div>
+  `;
+}
+
+// Search functionality
+searchBtn.addEventListener('click', () => {
+  searchModal.classList.remove('hidden');
+  searchInput.value = '';
+  searchResults.innerHTML = `
+    <div class="playlist-loading">
+      <p>Search for a track to add to queue</p>
+    </div>
+  `;
+  setTimeout(() => searchInput.focus(), 100);
+});
+
+closeSearchModalBtn.addEventListener('click', () => {
+  searchModal.classList.add('hidden');
+});
+
+// Close search modal when clicking outside
+searchModal.addEventListener('click', (e) => {
+  if (e.target === searchModal) {
+    searchModal.classList.add('hidden');
+  }
+});
+
+// Search on button click
+searchSubmitBtn.addEventListener('click', () => {
+  performSearch();
+});
+
+// Search on Enter key
+searchInput.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') {
+    performSearch();
+  }
+});
+
+async function performSearch() {
+  const query = searchInput.value.trim();
+
+  if (!query) {
+    searchResults.innerHTML = `
+      <div class="playlist-loading">
+        <p style="color: #ff6b6b;">Please enter a search term</p>
+      </div>
+    `;
+    return;
+  }
+
+  try {
+    // Show loading state
+    searchResults.innerHTML = `
+      <div class="playlist-loading">
+        <div class="spinner"></div>
+        <p>Searching...</p>
+      </div>
+    `;
+
+    const response = await browser.runtime.sendMessage({
+      action: 'searchTracks',
+      query: query,
+      limit: 20
+    });
+
+    console.log('Search response:', response);
+
+    if (!response || !response.success) {
+      searchResults.innerHTML = `
+        <div class="playlist-loading">
+          <p style="color: #ff6b6b;">Search failed: ${response?.error || 'Unknown error'}</p>
+        </div>
+      `;
+      return;
+    }
+
+    if (!response.data || !response.data.tracks || !response.data.tracks.items) {
+      searchResults.innerHTML = `
+        <div class="playlist-loading">
+          <p style="color: #ff6b6b;">No data received from search</p>
+        </div>
+      `;
+      return;
+    }
+
+    displaySearchResults(response.data.tracks.items);
+  } catch (error) {
+    console.error('Search error:', error);
+    searchResults.innerHTML = `
+      <div class="playlist-loading">
+        <p style="color: #ff6b6b;">Error: ${error.message || 'Unknown error'}</p>
+      </div>
+    `;
+  }
+}
+
+function displaySearchResults(tracks) {
+  if (!tracks || tracks.length === 0) {
+    searchResults.innerHTML = `
+      <div class="playlist-loading">
+        <p>No tracks found</p>
+      </div>
+    `;
+    return;
+  }
+
+  searchResults.innerHTML = tracks.map(track => {
+    const imageUrl = track.album?.images?.[0]?.url || '';
+    const trackName = track.name || 'Unknown Track';
+    const artistName = track.artists?.map(a => a.name).join(', ') || 'Unknown Artist';
+    const trackUri = track.uri || '';
+
+    return `
+      <div class="search-item" data-uri="${trackUri}">
+        ${imageUrl ? `<img src="${imageUrl}" alt="${trackName}" class="search-image">` : '<div class="search-image"></div>'}
+        <div class="search-info">
+          <div class="search-name">${trackName}</div>
+          <div class="search-artist">${artistName}</div>
+        </div>
+        <button class="add-to-queue-btn" data-uri="${trackUri}">Add</button>
+      </div>
+    `;
+  }).join('');
+
+  // Add click handlers to add buttons
+  document.querySelectorAll('.add-to-queue-btn').forEach(button => {
+    button.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const trackUri = button.getAttribute('data-uri');
+      await addTrackToQueue(trackUri, button);
+    });
+  });
+}
+
+async function addTrackToQueue(trackUri, button) {
+  try {
+    const response = await browser.runtime.sendMessage({
+      action: 'addToQueue',
+      trackUri: trackUri
+    });
+
+    if (response && response.success) {
+      // Update button to show success
+      button.textContent = 'Added!';
+      button.classList.add('added');
+      button.disabled = true;
+
+      // Show brief success message
+      setTimeout(() => {
+        if (button.textContent === 'Added!') {
+          button.textContent = 'Add';
+          button.classList.remove('added');
+          button.disabled = false;
+        }
+      }, 2000);
+    } else {
+      showError('Failed to add to queue: ' + (response?.error || 'Unknown error'));
+    }
+  } catch (error) {
+    console.error('Add to queue error:', error);
+    showError('Failed to add to queue: ' + error.message);
   }
 }
 
