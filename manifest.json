@@ -9,6 +9,7 @@
   },
   "permissions": [
     "storage",
+    "unlimitedStorage",
     "identity",
     "https://api.spotify.com/*",
     "https://accounts.spotify.com/*"

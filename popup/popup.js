@@ -36,6 +36,8 @@ const searchInput = document.getElementById('search-input');
 const searchSubmitBtn = document.getElementById('search-submit-btn');
 const searchResults = document.getElementById('search-results');
 
+const smartPlaylistsBtn = document.getElementById('smart-playlists-btn');
+
 // State
 let isPlaying = false;
 let isShuffle = false;
@@ -807,6 +809,14 @@ async function addTrackToQueue(trackUri, button) {
     showError('Failed to add to queue: ' + error.message);
   }
 }
+
+// Smart Playlists button
+smartPlaylistsBtn.addEventListener('click', () => {
+  // Open smart playlists page in new tab
+  browser.tabs.create({
+    url: browser.runtime.getURL('smart-playlists/smart-playlists.html')
+  });
+});
 
 // Initialize
 init();
