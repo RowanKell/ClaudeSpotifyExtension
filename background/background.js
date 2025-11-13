@@ -11,7 +11,9 @@ const SPOTIFY_API_URL = 'https://api.spotify.com/v1';
 const SCOPES = [
   'user-read-playback-state',
   'user-modify-playback-state',
-  'user-read-currently-playing'
+  'user-read-currently-playing',
+  'playlist-read-private',
+  'playlist-read-collaborative'
 ].join(' ');
 
 // Generate random string for PKCE
@@ -274,6 +276,26 @@ async function previous() {
   return await makeSpotifyRequest('/me/player/previous', { method: 'POST' });
 }
 
+// Get user's playlists
+async function getUserPlaylists(limit = 50, offset = 0) {
+  return await makeSpotifyRequest(`/me/playlists?limit=${limit}&offset=${offset}`);
+}
+
+// Start playing a playlist
+async function startPlaylist(playlistUri) {
+  return await makeSpotifyRequest('/me/player/play', {
+    method: 'PUT',
+    body: JSON.stringify({
+      context_uri: playlistUri
+    })
+  });
+}
+
+// Toggle shuffle mode
+async function toggleShuffle(state) {
+  return await makeSpotifyRequest(`/me/player/shuffle?state=${state}`, { method: 'PUT' });
+}
+
 // Logout
 async function logout() {
   await browser.storage.local.remove([
@@ -296,13 +318,25 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     pause: pause,
     next: next,
     previous: previous,
+    getUserPlaylists: getUserPlaylists,
+    startPlaylist: startPlaylist,
+    toggleShuffle: toggleShuffle,
     logout: logout
   };
 
   const action = actions[message.action];
 
   if (action) {
-    action().then(sendResponse);
+    // Handle actions with parameters
+    if (message.action === 'getUserPlaylists') {
+      action(message.limit, message.offset).then(sendResponse);
+    } else if (message.action === 'startPlaylist') {
+      action(message.playlistUri).then(sendResponse);
+    } else if (message.action === 'toggleShuffle') {
+      action(message.state).then(sendResponse);
+    } else {
+      action().then(sendResponse);
+    }
     return true; // Indicates async response
   }
 
