@@ -25,6 +25,10 @@
     "scripts": ["background/background.js"],
     "persistent": false
   },
+  "options_ui": {
+    "page": "show-redirect-uri.html",
+    "open_in_tab": true
+  },
   "browser_specific_settings": {
     "gecko": {
       "id": "spotify-controller@example.com",
