@@ -289,6 +289,18 @@ async function getQueue() {
   return await makeSpotifyRequest('/me/player/queue');
 }
 
+// Search for tracks
+async function searchTracks(query, limit = 20) {
+  const encodedQuery = encodeURIComponent(query);
+  return await makeSpotifyRequest(`/search?q=${encodedQuery}&type=track&limit=${limit}`);
+}
+
+// Add track to queue
+async function addToQueue(trackUri) {
+  const encodedUri = encodeURIComponent(trackUri);
+  return await makeSpotifyRequest(`/me/player/queue?uri=${encodedUri}`, { method: 'POST' });
+}
+
 // Start playing a playlist
 async function startPlaylist(playlistUri) {
   return await makeSpotifyRequest('/me/player/play', {
@@ -328,6 +340,8 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     previous: previous,
     getUserPlaylists: getUserPlaylists,
     getQueue: getQueue,
+    searchTracks: searchTracks,
+    addToQueue: addToQueue,
     startPlaylist: startPlaylist,
     toggleShuffle: toggleShuffle,
     logout: logout
@@ -339,6 +353,10 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     // Handle actions with parameters
     if (message.action === 'getUserPlaylists') {
       action(message.limit, message.offset).then(sendResponse);
+    } else if (message.action === 'searchTracks') {
+      action(message.query, message.limit).then(sendResponse);
+    } else if (message.action === 'addToQueue') {
+      action(message.trackUri).then(sendResponse);
     } else if (message.action === 'startPlaylist') {
       action(message.playlistUri).then(sendResponse);
     } else if (message.action === 'toggleShuffle') {

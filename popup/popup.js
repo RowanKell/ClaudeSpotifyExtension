@@ -29,6 +29,13 @@ const queueModal = document.getElementById('queue-modal');
 const closeQueueModalBtn = document.getElementById('close-queue-modal-btn');
 const queueList = document.getElementById('queue-list');
 
+const searchBtn = document.getElementById('search-btn');
+const searchModal = document.getElementById('search-modal');
+const closeSearchModalBtn = document.getElementById('close-search-modal-btn');
+const searchInput = document.getElementById('search-input');
+const searchSubmitBtn = document.getElementById('search-submit-btn');
+const searchResults = document.getElementById('search-results');
+
 // State
 let isPlaying = false;
 let isShuffle = false;
@@ -594,6 +601,167 @@ function createQueueItem(track, isCurrentlyPlaying) {
       </div>
     </div>
   `;
+}
+
+// Search functionality
+searchBtn.addEventListener('click', () => {
+  searchModal.classList.remove('hidden');
+  searchInput.value = '';
+  searchResults.innerHTML = `
+    <div class="playlist-loading">
+      <p>Search for a track to add to queue</p>
+    </div>
+  `;
+  setTimeout(() => searchInput.focus(), 100);
+});
+
+closeSearchModalBtn.addEventListener('click', () => {
+  searchModal.classList.add('hidden');
+});
+
+// Close search modal when clicking outside
+searchModal.addEventListener('click', (e) => {
+  if (e.target === searchModal) {
+    searchModal.classList.add('hidden');
+  }
+});
+
+// Search on button click
+searchSubmitBtn.addEventListener('click', () => {
+  performSearch();
+});
+
+// Search on Enter key
+searchInput.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') {
+    performSearch();
+  }
+});
+
+async function performSearch() {
+  const query = searchInput.value.trim();
+
+  if (!query) {
+    searchResults.innerHTML = `
+      <div class="playlist-loading">
+        <p style="color: #ff6b6b;">Please enter a search term</p>
+      </div>
+    `;
+    return;
+  }
+
+  try {
+    // Show loading state
+    searchResults.innerHTML = `
+      <div class="playlist-loading">
+        <div class="spinner"></div>
+        <p>Searching...</p>
+      </div>
+    `;
+
+    const response = await browser.runtime.sendMessage({
+      action: 'searchTracks',
+      query: query,
+      limit: 20
+    });
+
+    console.log('Search response:', response);
+
+    if (!response || !response.success) {
+      searchResults.innerHTML = `
+        <div class="playlist-loading">
+          <p style="color: #ff6b6b;">Search failed: ${response?.error || 'Unknown error'}</p>
+        </div>
+      `;
+      return;
+    }
+
+    if (!response.data || !response.data.tracks || !response.data.tracks.items) {
+      searchResults.innerHTML = `
+        <div class="playlist-loading">
+          <p style="color: #ff6b6b;">No data received from search</p>
+        </div>
+      `;
+      return;
+    }
+
+    displaySearchResults(response.data.tracks.items);
+  } catch (error) {
+    console.error('Search error:', error);
+    searchResults.innerHTML = `
+      <div class="playlist-loading">
+        <p style="color: #ff6b6b;">Error: ${error.message || 'Unknown error'}</p>
+      </div>
+    `;
+  }
+}
+
+function displaySearchResults(tracks) {
+  if (!tracks || tracks.length === 0) {
+    searchResults.innerHTML = `
+      <div class="playlist-loading">
+        <p>No tracks found</p>
+      </div>
+    `;
+    return;
+  }
+
+  searchResults.innerHTML = tracks.map(track => {
+    const imageUrl = track.album?.images?.[0]?.url || '';
+    const trackName = track.name || 'Unknown Track';
+    const artistName = track.artists?.map(a => a.name).join(', ') || 'Unknown Artist';
+    const trackUri = track.uri || '';
+
+    return `
+      <div class="search-item" data-uri="${trackUri}">
+        ${imageUrl ? `<img src="${imageUrl}" alt="${trackName}" class="search-image">` : '<div class="search-image"></div>'}
+        <div class="search-info">
+          <div class="search-name">${trackName}</div>
+          <div class="search-artist">${artistName}</div>
+        </div>
+        <button class="add-to-queue-btn" data-uri="${trackUri}">Add</button>
+      </div>
+    `;
+  }).join('');
+
+  // Add click handlers to add buttons
+  document.querySelectorAll('.add-to-queue-btn').forEach(button => {
+    button.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const trackUri = button.getAttribute('data-uri');
+      await addTrackToQueue(trackUri, button);
+    });
+  });
+}
+
+async function addTrackToQueue(trackUri, button) {
+  try {
+    const response = await browser.runtime.sendMessage({
+      action: 'addToQueue',
+      trackUri: trackUri
+    });
+
+    if (response && response.success) {
+      // Update button to show success
+      button.textContent = 'Added!';
+      button.classList.add('added');
+      button.disabled = true;
+
+      // Show brief success message
+      setTimeout(() => {
+        if (button.textContent === 'Added!') {
+          button.textContent = 'Add';
+          button.classList.remove('added');
+          button.disabled = false;
+        }
+      }, 2000);
+    } else {
+      showError('Failed to add to queue: ' + (response?.error || 'Unknown error'));
+    }
+  } catch (error) {
+    console.error('Add to queue error:', error);
+    showError('Failed to add to queue: ' + error.message);
+  }
 }
 
 // Initialize
