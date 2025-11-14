@@ -212,6 +212,10 @@ class SessionTracker {
         }
 
         console.log('Audio features fetched for', features.filter(f => f !== null).length, 'tracks');
+      } else if (response && !response.success) {
+        // Log the specific error
+        console.warn('Audio features unavailable:', response.message || response.error);
+        console.log('Session will be saved without audio features. Recommendations may be slightly less accurate.');
       }
     } catch (error) {
       console.error('Error fetching audio features:', error);

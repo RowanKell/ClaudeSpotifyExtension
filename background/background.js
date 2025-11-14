@@ -351,15 +351,32 @@ async function getAudioFeatures(trackIds) {
   }
 
   const allFeatures = [];
+  let hasError = false;
+  let errorInfo = null;
+
   for (const chunk of chunks) {
     const ids = chunk.join(',');
     const result = await makeSpotifyRequest(`/audio-features?ids=${ids}`);
 
     if (result.success && result.data && result.data.audio_features) {
       allFeatures.push(...result.data.audio_features);
+    } else {
+      hasError = true;
+      errorInfo = result;
+      console.warn('Failed to fetch audio features for chunk:', result.error || result.message || 'Unknown error');
     }
   }
 
+  // If all chunks failed, return error
+  if (hasError && allFeatures.length === 0) {
+    return {
+      success: false,
+      error: errorInfo?.error || 'AUDIO_FEATURES_UNAVAILABLE',
+      message: errorInfo?.message || 'Audio features are temporarily unavailable. Your session will be saved without audio features, which may slightly reduce recommendation accuracy.'
+    };
+  }
+
+  // If some chunks succeeded, return with partial data
   return { success: true, data: { audio_features: allFeatures } };
 }
 

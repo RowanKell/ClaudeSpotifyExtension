@@ -284,7 +284,7 @@ async function loadTrainingHistory() {
           <div class="history-playlist">🎵 ${session.playlistName}</div>
           <div class="history-meta">
             <span>⏱ ${duration}</span>
-            <span>🎵 ${session.tracksPlayed || 0} tracks</span>
+            <span>🎵 ${session.tracks?.length || 0} tracks</span>
           </div>
         </div>
       `;
