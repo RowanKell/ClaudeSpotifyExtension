@@ -13,7 +13,7 @@ const progressFill = document.getElementById('progress-fill');
 const switchToInferenceBtn = document.getElementById('switch-to-inference-btn');
 
 const taskInput = document.getElementById('task-input');
-const playlistSelect = document.getElementById('playlist-select');
+const playlistSelector = document.getElementById('playlist-selector');
 const startSessionBtn = document.getElementById('start-session-btn');
 
 const newSessionCard = document.getElementById('new-session-card');
@@ -41,6 +41,7 @@ const backBtn = document.getElementById('back-btn');
 // State
 let currentMode = 'training';
 let userPlaylists = [];
+let selectedPlaylistUri = null;
 let durationUpdateInterval = null;
 
 // Initialize
@@ -126,16 +127,66 @@ async function loadPlaylists() {
   }
 }
 
-// Populate playlist dropdown
+// Populate playlist selector with visual items
 function populatePlaylistSelect() {
-  playlistSelect.innerHTML = '<option value="">Choose a playlist...</option>';
-
-  for (const playlist of userPlaylists) {
-    const option = document.createElement('option');
-    option.value = playlist.uri;
-    option.textContent = playlist.name;
-    playlistSelect.appendChild(option);
+  if (userPlaylists.length === 0) {
+    playlistSelector.innerHTML = `
+      <div class="playlist-loading">
+        <p>No playlists or albums found</p>
+      </div>
+    `;
+    return;
   }
+
+  playlistSelector.innerHTML = userPlaylists.map(playlist => {
+    const imageUrl = playlist.images?.[0]?.url || '';
+    const isLikedSongs = playlist.uri === 'liked-songs';
+    const typeBadge = playlist.type === 'album' ? 'Album' : playlist.type === 'collection' ? 'Collection' : 'Playlist';
+
+    let imageHtml;
+    if (isLikedSongs) {
+      imageHtml = `
+        <div class="playlist-selector-image liked-songs-image">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="#fff">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
+        </div>
+      `;
+    } else if (imageUrl) {
+      imageHtml = `<img src="${imageUrl}" alt="${playlist.name}" class="playlist-selector-image">`;
+    } else {
+      imageHtml = `<div class="playlist-selector-image"></div>`;
+    }
+
+    return `
+      <div class="playlist-selector-item" data-uri="${playlist.uri}" data-type="${playlist.type}">
+        ${imageHtml}
+        <div class="playlist-selector-info">
+          <div class="playlist-selector-name">${playlist.name}</div>
+          <div class="playlist-selector-meta">
+            <span class="playlist-selector-type">${typeBadge}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Add click handlers to playlist items
+  document.querySelectorAll('.playlist-selector-item').forEach(item => {
+    item.addEventListener('click', () => {
+      // Remove selection from all items
+      document.querySelectorAll('.playlist-selector-item').forEach(el => {
+        el.classList.remove('selected');
+      });
+
+      // Add selection to clicked item
+      item.classList.add('selected');
+      selectedPlaylistUri = item.getAttribute('data-uri');
+
+      // Update start button state
+      updateStartButtonState();
+    });
+  });
 }
 
 // Update UI based on current mode and metadata
@@ -248,13 +299,9 @@ taskInput.addEventListener('input', () => {
   updateStartButtonState();
 });
 
-playlistSelect.addEventListener('change', () => {
-  updateStartButtonState();
-});
-
 function updateStartButtonState() {
   const hasTask = taskInput.value.trim().length > 0;
-  const hasPlaylist = playlistSelect.value !== '';
+  const hasPlaylist = selectedPlaylistUri !== null;
 
   startSessionBtn.disabled = !(hasTask && hasPlaylist);
 }
@@ -262,7 +309,7 @@ function updateStartButtonState() {
 // Start training session
 startSessionBtn.addEventListener('click', async () => {
   const taskDescription = taskInput.value.trim();
-  const playlistUri = playlistSelect.value;
+  const playlistUri = selectedPlaylistUri;
 
   if (!taskDescription || !playlistUri) {
     return;
@@ -316,7 +363,13 @@ startSessionBtn.addEventListener('click', async () => {
 
     // Clear inputs
     taskInput.value = '';
-    playlistSelect.value = '';
+    selectedPlaylistUri = null;
+
+    // Remove selection from all items
+    document.querySelectorAll('.playlist-selector-item').forEach(el => {
+      el.classList.remove('selected');
+    });
+
     updateStartButtonState();
   } catch (error) {
     console.error('Error starting session:', error);

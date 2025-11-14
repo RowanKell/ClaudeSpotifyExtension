@@ -203,6 +203,130 @@ body {
   margin-top: 6px;
 }
 
+/* Playlist Selector */
+.playlist-selector {
+  max-height: 300px;
+  overflow-y: auto;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.playlist-selector::-webkit-scrollbar {
+  width: 8px;
+}
+
+.playlist-selector::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+.playlist-selector::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+.playlist-selector::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.playlist-selector .playlist-loading {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.playlist-selector .playlist-loading .spinner {
+  width: 32px;
+  height: 32px;
+  margin: 0 auto 12px;
+}
+
+.playlist-selector .playlist-loading p {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.playlist-selector-item {
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.playlist-selector-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateX(4px);
+}
+
+.playlist-selector-item:active {
+  transform: translateX(2px);
+}
+
+.playlist-selector-item.selected {
+  background: rgba(29, 185, 84, 0.2);
+  border-color: #1DB954;
+}
+
+.playlist-selector-item.selected:hover {
+  background: rgba(29, 185, 84, 0.3);
+}
+
+.playlist-selector-image {
+  width: 48px;
+  height: 48px;
+  border-radius: 4px;
+  object-fit: cover;
+  background: rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+}
+
+.liked-songs-image {
+  background: linear-gradient(135deg, #450af5, #c4efd9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.playlist-selector-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.playlist-selector-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 4px;
+}
+
+.playlist-selector-meta {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.playlist-selector-type {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-left: 8px;
+}
+
 /* Buttons */
 .primary-btn, .secondary-btn {
   width: 100%;

@@ -70,10 +70,13 @@
         </div>
 
         <div class="form-group">
-          <label for="playlist-select">Select Playlist</label>
-          <select id="playlist-select" class="playlist-select">
-            <option value="">Loading playlists...</option>
-          </select>
+          <label for="playlist-selector">Select Playlist or Album</label>
+          <div id="playlist-selector" class="playlist-selector">
+            <div class="playlist-loading">
+              <div class="spinner"></div>
+              <p>Loading playlists...</p>
+            </div>
+          </div>
         </div>
 
         <button id="start-session-btn" class="primary-btn" disabled>
