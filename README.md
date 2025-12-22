@@ -1,15 +1,36 @@
 # Spotify Controller - Firefox Extension
 
-A beautiful Firefox extension that allows you to control your Spotify playback directly from your browser. View album art, track information, and control playback with play/pause, next, and previous buttons.
+A beautiful Firefox extension that brings Spotify control directly to your browser with rich features for managing your music.
 
 ## Features
 
-- **Spotify Integration** - Full integration with Spotify Web API
-- **Playback Controls** - Play, pause, skip forward, and skip backward
+### 🎵 Playback Controls
+- **Play/Pause** - Control playback with one click
+- **Skip Tracks** - Next and previous track buttons
+- **Shuffle** - Toggle shuffle mode on/off
 - **Album Artwork** - Display current track's album cover
 - **Track Information** - Show track name and artist
 - **Real-time Updates** - Automatically updates playback state
-- **Secure Authentication** - Uses OAuth 2.0 PKCE flow for secure authentication
+
+### 📋 Library Management
+- **Playlist Browsing** - View and play your saved playlists
+- **Liked Songs** - Quick access to your liked songs collection
+- **Visual Interface** - See playlist artwork and track counts
+
+### 🎼 Queue Management
+- **View Queue** - See what's playing next
+- **Current Track** - Highlighted view of now playing
+- **Track Details** - See all upcoming tracks with album art
+
+### 🔍 Search & Add
+- **Search Spotify** - Search the entire Spotify catalog
+- **Add to Queue** - Add any track directly to your queue
+- **Preview Info** - See artist and album before adding
+
+### 🔐 Secure Authentication
+- **OAuth 2.0 PKCE** - Industry-standard secure authentication
+- **Token Refresh** - Automatic token renewal
+- **Privacy Focused** - Credentials stored locally
 
 ## Screenshots
 
@@ -213,10 +234,10 @@ For issues or questions:
 ## Future Enhancements
 
 Potential features for future versions:
-- Volume control (if supported by active device)
-- Seek/scrub through track
-- Queue management
-- Playlist browsing
-- Search functionality
-- Keyboard shortcuts
-- Custom themes
+- **Smart Playlists** - ML-powered recommendations based on work context
+- **Album Browsing** - Browse and play your saved albums
+- **Volume Control** - Adjust volume (if supported by active device)
+- **Seek/Scrub** - Jump to any point in a track
+- **Keyboard Shortcuts** - Control playback without clicking
+- **Custom Themes** - Personalize the extension appearance
+- **Playlist Creation** - Create and edit playlists from the extension
