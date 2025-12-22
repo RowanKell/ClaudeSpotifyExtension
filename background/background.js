@@ -1,6 +1,6 @@
 // Spotify API Configuration
 // IMPORTANT: Users need to set these values from their Spotify Developer Dashboard
-const SPOTIFY_CLIENT_ID = 'YOUR_CLIENT_ID_HERE'; // Get from https://developer.spotify.com/dashboard
+const SPOTIFY_CLIENT_ID = 'dd5a3028e68544849bd456c22e06a44f'; // Get from https://developer.spotify.com/dashboard
 const REDIRECT_URI = browser.identity.getRedirectURL();
 
 const SPOTIFY_AUTH_URL = 'https://accounts.spotify.com/authorize';
