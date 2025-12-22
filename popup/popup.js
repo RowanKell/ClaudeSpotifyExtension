@@ -24,6 +24,11 @@ const playlistModal = document.getElementById('playlist-modal');
 const closeModalBtn = document.getElementById('close-modal-btn');
 const playlistList = document.getElementById('playlist-list');
 
+const albumBtn = document.getElementById('album-btn');
+const albumModal = document.getElementById('album-modal');
+const closeAlbumModalBtn = document.getElementById('close-album-modal-btn');
+const albumList = document.getElementById('album-list');
+
 const queueBtn = document.getElementById('queue-btn');
 const queueModal = document.getElementById('queue-modal');
 const closeQueueModalBtn = document.getElementById('close-queue-modal-btn');
@@ -510,6 +515,134 @@ async function playLikedSongs() {
   } catch (error) {
     console.error('Play liked songs error:', error);
     showError('Failed to play liked songs: ' + error.message);
+  }
+}
+
+// Album functionality
+albumBtn.addEventListener('click', async () => {
+  try {
+    albumModal.classList.remove('hidden');
+    await loadAlbums();
+  } catch (error) {
+    console.error('Album load error:', error);
+    showError('Failed to load albums');
+  }
+});
+
+closeAlbumModalBtn.addEventListener('click', () => {
+  albumModal.classList.add('hidden');
+});
+
+// Close modal when clicking outside
+albumModal.addEventListener('click', (e) => {
+  if (e.target === albumModal) {
+    albumModal.classList.add('hidden');
+  }
+});
+
+async function loadAlbums() {
+  try {
+    // Show loading state
+    albumList.innerHTML = `
+      <div class="playlist-loading">
+        <div class="spinner"></div>
+        <p>Loading albums...</p>
+      </div>
+    `;
+
+    // Fetch albums
+    const response = await browser.runtime.sendMessage({
+      action: 'getSavedAlbums',
+      limit: 50,
+      offset: 0
+    });
+
+    if (!response.success) {
+      albumList.innerHTML = `
+        <div class="playlist-loading">
+          <p style="color: #ff6b6b;">Failed to load albums: ${response.error || 'Unknown error'}</p>
+        </div>
+      `;
+      return;
+    }
+
+    if (!response.data) {
+      albumList.innerHTML = `
+        <div class="playlist-loading">
+          <p style="color: #ff6b6b;">No album data received</p>
+        </div>
+      `;
+      return;
+    }
+
+    displayAlbums(response.data.items);
+  } catch (error) {
+    console.error('Load albums error:', error);
+    albumList.innerHTML = `
+      <div class="playlist-loading">
+        <p style="color: #ff6b6b;">Error: ${error.message || 'Unknown error'}</p>
+      </div>
+    `;
+  }
+}
+
+function displayAlbums(albums) {
+  if (!albums || albums.length === 0) {
+    albumList.innerHTML = `
+      <div class="playlist-loading">
+        <p>No albums found</p>
+      </div>
+    `;
+    return;
+  }
+
+  albumList.innerHTML = albums.map(item => {
+    const album = item.album;
+    const imageUrl = album.images?.[0]?.url || '';
+    const trackCount = album.total_tracks || 0;
+    const artistNames = album.artists?.map(a => a.name).join(', ') || 'Unknown Artist';
+
+    return `
+      <div class="playlist-item" data-uri="${album.uri || ''}">
+        ${imageUrl ? `<img src="${imageUrl}" alt="${album.name || 'Album'}" class="playlist-image">` : '<div class="playlist-image"></div>'}
+        <div class="playlist-info">
+          <div class="playlist-name">${album.name || 'Unnamed Album'}</div>
+          <div class="playlist-tracks">${artistNames} • ${trackCount} tracks</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Add click handlers
+  document.querySelectorAll('#album-list .playlist-item').forEach(item => {
+    item.addEventListener('click', async () => {
+      const albumUri = item.getAttribute('data-uri');
+      await playAlbum(albumUri);
+    });
+  });
+}
+
+async function playAlbum(albumUri) {
+  try {
+    const response = await browser.runtime.sendMessage({
+      action: 'startAlbum',
+      albumUri: albumUri
+    });
+
+    if (response && response.success) {
+      // Close the modal
+      albumModal.classList.add('hidden');
+
+      // Update playback state after a short delay
+      setTimeout(updatePlaybackState, 500);
+    } else if (response && response.error) {
+      // Use the detailed message if available, otherwise use the error code
+      const errorMsg = response.message || response.error;
+      showError(errorMsg);
+    }
+  } catch (error) {
+    console.error('Play album error:', error);
+    showError('Failed to play album: ' + error.message);
   }
 }
 

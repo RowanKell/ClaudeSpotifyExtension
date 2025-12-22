@@ -293,6 +293,11 @@ async function getSavedTracks(limit = 50, offset = 0) {
   return result;
 }
 
+// Get user's saved albums
+async function getSavedAlbums(limit = 50, offset = 0) {
+  return await makeSpotifyRequest(`/me/albums?limit=${limit}&offset=${offset}`);
+}
+
 // Get user's queue
 async function getQueue() {
   return await makeSpotifyRequest('/me/player/queue');
@@ -316,6 +321,16 @@ async function startPlaylist(playlistUri) {
     method: 'PUT',
     body: JSON.stringify({
       context_uri: playlistUri
+    })
+  });
+}
+
+// Start playing an album
+async function startAlbum(albumUri) {
+  return await makeSpotifyRequest('/me/player/play', {
+    method: 'PUT',
+    body: JSON.stringify({
+      context_uri: albumUri
     })
   });
 }
@@ -381,10 +396,12 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     previous: previous,
     getUserPlaylists: getUserPlaylists,
     getSavedTracks: getSavedTracks,
+    getSavedAlbums: getSavedAlbums,
     getQueue: getQueue,
     searchTracks: searchTracks,
     addToQueue: addToQueue,
     startPlaylist: startPlaylist,
+    startAlbum: startAlbum,
     playLikedSongs: playLikedSongs,
     toggleShuffle: toggleShuffle,
     logout: logout
@@ -396,12 +413,18 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     // Handle actions with parameters
     if (message.action === 'getUserPlaylists') {
       action(message.limit, message.offset).then(sendResponse);
+    } else if (message.action === 'getSavedTracks') {
+      action(message.limit, message.offset).then(sendResponse);
+    } else if (message.action === 'getSavedAlbums') {
+      action(message.limit, message.offset).then(sendResponse);
     } else if (message.action === 'searchTracks') {
       action(message.query, message.limit).then(sendResponse);
     } else if (message.action === 'addToQueue') {
       action(message.trackUri).then(sendResponse);
     } else if (message.action === 'startPlaylist') {
       action(message.playlistUri).then(sendResponse);
+    } else if (message.action === 'startAlbum') {
+      action(message.albumUri).then(sendResponse);
     } else if (message.action === 'toggleShuffle') {
       action(message.state).then(sendResponse);
     } else {

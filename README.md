@@ -14,8 +14,9 @@ A beautiful Firefox extension that brings Spotify control directly to your brows
 
 ### 📋 Library Management
 - **Playlist Browsing** - View and play your saved playlists
+- **Album Browsing** - View and play your saved albums
 - **Liked Songs** - Quick access to your liked songs collection
-- **Visual Interface** - See playlist artwork and track counts
+- **Visual Interface** - See artwork and track counts for all your music
 
 ### 🎼 Queue Management
 - **View Queue** - See what's playing next
@@ -235,7 +236,6 @@ For issues or questions:
 
 Potential features for future versions:
 - **Smart Playlists** - ML-powered recommendations based on work context
-- **Album Browsing** - Browse and play your saved albums
 - **Volume Control** - Adjust volume (if supported by active device)
 - **Seek/Scrub** - Jump to any point in a track
 - **Keyboard Shortcuts** - Control playback without clicking
